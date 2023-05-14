@@ -46,23 +46,26 @@ def colorize(string, color):
 
 
 class LightningTUI():
-    def __init__(self, coin=None, node=None):
+    def __init__(self, coin: str=None, node: dex.LightningNode=None):
         self.menu_items = [
             {"Initialize Lightning": self.start_lightning},
             {"Connect to Lightning Node": self.connect_to_node},
+            {"Add Trusted Node": self.add_trusted_node},
+            {"Remove Trusted Node": self.remove_trusted_node},
+            {"List Trusted Nodes": self.list_trusted_nodes},
             {"Open Channel": self.open_channel},
             {"Update Channel": self.update_channel},
+            {"List Open Channels": self.list_open_channels},
+            {"List Closed Channels": self.list_closed_channels},
             {"Generate Invoice": self.generate_invoice},
             {"Pay Invoice": self.pay_invoice},
             {"Pay Keysend": self.pay_keysend},
-            {"List Open Channels": self.list_open_channels},
-            {"List Closed Channels": self.list_closed_channels},
-            {"List Trusted Nodes": self.list_trusted_nodes},
-            {"Add Trusted Nodes": self.add_trusted_nodes},
-            {"Remove Trusted Nodes": self.remove_trusted_nodes},
-            {"Get Payment Details": self.get_payment_details},
             {"List Payments": self.list_payments},
+            {"View Payment Details": self.get_payment_details},
             {"Get Claimable Balances": self.get_claimable_balances},
+            {"View Lightning Explorers": self.get_lightning_explorers},
+            {"Grab a coffee from StarBlocks": self.get_coffee},
+            {"Help!": self.get_help},
             {"Exit TUI": self.exit_tui}
         ]
         self.coin = coin
@@ -73,6 +76,9 @@ class LightningTUI():
         self.status = self.get_status()
 
     def start_lightning(self):
+        
+        if self.status['lightning_status'] == "Initialized":
+            return
         self.coin = color_input(" Select coin to initialize lightning [tBTC, BTC, LTC]: ") or "tBTC"
         while self.coin not in ["tBTC", "BTC", "LTC"]:
             logging.warning("Invalid coin selection. Please try again.")
@@ -88,7 +94,26 @@ class LightningTUI():
         )
         self.status = self.get_status()
         return self.node
-        
+    
+    def get_coffee(self):
+        print(colorize(f"{' '*6}Once you have:", "cyan"))
+        print(colorize(f"{' '*8}- initialised your node", "cyan"))
+        print(colorize(f"{' '*8}- connected to a well known node (check the lightning explorers)", "cyan"))
+        print(colorize(f"{' '*8}- opened a channel from node", "cyan"))
+        print(colorize(f"\n{' '*6}You can get an invoice for a coffee from https://starblocks.acinq.co!", "blue"))
+        print(colorize(f"\n{' '*8}Then you can get pay the `Pay Invoice`, `View Payment Details` or `List Payments`", "cyan"))
+
+    def get_help(self):
+        print(colorize(f"{' '*6}Get more information about the AtomicDEX API Lightning features at:", "green"))
+        print(colorize(f"{' '*6}https://github.com/KomodoPlatform/komodo-docs-mdx/pull/31/files", "green"))
+
+    def get_lightning_explorers(self):
+        print(colorize(f"{' '*6}=== Lightining Explorers ===", "cyan"))
+        print(colorize(f"{' '*6}https://1ml.com/", "green"))
+        print(colorize(f"{' '*6}https://mempool.space/lightning", "green"))
+        print(colorize(f"{' '*6}https://explorer.acinq.co/", "green"))
+
+
     def get_coin_balance(self):
         return self.node.get_coin_balance()
     
@@ -131,14 +156,14 @@ class LightningTUI():
     
     def open_channel(self):
         if self.node is None:
-            logger.warning(" Lightning not initialized. Please initialize lightning first.", "red")
+            logger.warning(" Lightning not initialized. Please initialize lightning first.")
             return
         node_address = color_input(" Enter lightning node address to connect to: ") or "038863cf8ab91046230f561cd5b386cbff8309fa02e3f0c3ed161a3aeb64a643b9@203.132.94.196:9735"
         self.node.open_channel(node_address)
         
     def update_channel(self):
         if self.node is None:
-            logger.warning(" Lightning not initialized. Please initialize lightning first.", "red")
+            logger.warning(" Lightning not initialized. Please initialize lightning first.")
             return
         uuid = color_input(" Enter channel uuid: ")
         proportional_fee_in_millionths_sats = color_input(" Enter proportional_fee_in_millionths_sats: ")
@@ -191,9 +216,22 @@ class LightningTUI():
         if self.node is None:
             print(colorize(" Lightning not initialized. Please initialize lightning first.", "red"))
             return
-        amount_in_msat = color_input(" Enter amount_in_msat: ")
+        
         pubkey = color_input(" Enter pubkey: ")
-        expiry = color_input(" Enter expiry: ")
+        amount_in_msat = None
+        while amount_in_msat is None:
+            try:
+                amount_in_msat = int(color_input(" Enter amount_in_msat: "))
+            except:
+                logger.warning("Invalid amount_in_msat (must be an integer). Please try again.")
+
+        expiry = None
+        while expiry is None:
+            try:
+                expiry = int(color_input(" Enter expiry: "))
+            except:
+                logger.warning("Invalid expiry (must be an integer). Please try again.")
+
         self.node.send_payment(
             amount_in_msat=amount_in_msat,
             pubkey=pubkey,
@@ -218,17 +256,19 @@ class LightningTUI():
             return
         self.node.list_trusted_nodes()
 
-    def add_trusted_nodes(self):
+    def add_trusted_node(self):
         if self.node is None:
             print(colorize(" Lightning not initialized. Please initialize lightning first.", "red"))
             return
-        self.node.add_trusted_nodes()
+        node_id = color_input(" Enter Node ID: ")
+        self.node.add_trusted_node(node_id)
     
-    def remove_trusted_nodes(self):
+    def remove_trusted_node(self):
         if self.node is None:
             print(colorize(" Lightning not initialized. Please initialize lightning first.", "red"))
             return
-        self.node.remove_trusted_nodes()
+        node_id = color_input(" Enter Node ID: ")
+        self.node.remove_trusted_node(node_id)
     
     def get_payment_details(self):
         if self.node is None:

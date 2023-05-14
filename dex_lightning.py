@@ -50,17 +50,18 @@ class LightningNode:
         self.initialize_lightning()
         
 
-    def dexAPI(self, params):
+    def dexAPI(self, params: dict, nolog: bool=False) -> dict:
         params.update({"userpass": MM2_USERPASS})
-        logger.debug(f"PARAMS: {params}")
+        if not nolog: logger.debug(f"PARAMS: {params}")
         resp = requests.post(self.dex_url, json.dumps(params)).json()
-        if "error" in resp:
-            logger.warning(f"ERROR: {resp}")
-        else:
-            logger.info(f"RESP: {resp}")
+        if not nolog:
+            if "error" in resp:
+                logger.warning(f"ERROR: {resp}")
+            else:
+                logger.info(f"RESP: {resp}")
         return resp
 
-    def activate_coin(self, coin):
+    def activate_coin(self, coin: str) -> dict:
         activation_params = requests.get(f"https://stats.kmd.io/api/atomicdex/activation_commands/?coin={coin}").json()
         if "coin" in activation_params:
             activation_params.update({"coin": self.platform_coin})
@@ -90,7 +91,7 @@ class LightningNode:
             "method": "my_balance",
             "coin": self.platform_coin
         }
-        resp = self.dexAPI(params)
+        resp = self.dexAPI(params, nolog=True)
         self.coin_address = resp["address"]
         self.coin_balance = resp["balance"]
         return resp
@@ -100,7 +101,7 @@ class LightningNode:
             "method": "my_balance",
             "coin": self.coin
         }
-        resp = self.dexAPI(params)
+        resp = self.dexAPI(params, nolog=True)
         self.lightning_address = resp["address"]
         self.lightning_balance = resp["balance"]
         return resp
@@ -161,7 +162,7 @@ class LightningNode:
                 break
             time.sleep(2)
 
-    def init_lightning_status(self, task_id):
+    def init_lightning_status(self, task_id: int) -> dict:
         params = {
             "mmrpc": "2.0",
             "method": "task::enable_lightning::status",
@@ -174,7 +175,7 @@ class LightningNode:
         response = self.dexAPI(params)
         return response
 
-    def init_lightning_cancel(self, task_id):
+    def init_lightning_cancel(self, task_id: int) -> dict:
         params = {
             "mmrpc": "2.0",
             "method": "task::enable_lightning::cancel",
@@ -185,7 +186,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def connect_to_node(self, node_address):
+    def connect_to_node(self, node_address: str) -> dict:
         params = {
             "mmrpc": "2.0",
             "method": "lightning::nodes::connect_to_node",
@@ -208,7 +209,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def remove_trusted_node(self, node_id="038863cf8ab91046230f561cd5b386cbff8309fa02e3f0c3ed161a3aeb64a643b9"):
+    def remove_trusted_node(self, node_id: str) -> dict:
         params = {
             "mmrpc": "2.0",
             "method": "lightning::nodes::remove_trusted_node",
@@ -220,7 +221,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def add_trusted_node(self, node_id="038863cf8ab91046230f561cd5b386cbff8309fa02e3f0c3ed161a3aeb64a643b9"):
+    def add_trusted_node(self):
         params = {
             "mmrpc": "2.0",
             "method": "lightning::nodes::add_trusted_node",
@@ -232,25 +233,36 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def open_channel(self, node_address):
+    def open_channel(self, node_address: str, value: int=0, push_msat: int=0, max: bool=False) -> dict:
         params = {
             "mmrpc": "2.0",
             "method": "lightning::channels::open_channel",
             "params": {
                 "coin": self.coin,
                 "node_address": node_address,
-                "amount": {
-                    "type": "Exact",
-                    "value": 0.0004
-                }
+                "push_msat": push_msat
             },
             "id": 762
         }
+        if max:
+            params["params"].update({
+                "amount": {
+                    "type": "Max"
+                }
+            })
+        else:
+            params["params"].update({
+                "amount": {
+                    "type": "Exact",
+                    "value": value
+                }
+            })
+
         return self.dexAPI(params)
 
-    def update_channel(self, uuid, proportional_fee_in_millionths_sats,
-                       base_fee_msat, cltv_expiry_delta, max_dust_htlc_exposure_msat,
-                       force_close_avoidance_max_fee_sats):
+    def update_channel(self, uuid: str, proportional_fee_in_millionths_sats: int,
+                       base_fee_msat: int, cltv_expiry_delta: int, max_dust_htlc_exposure_msat: int,
+                       force_close_avoidance_max_fee_sats: int) -> dict:
         params = {
             "mmrpc": "2.0",
             "method": "lightning::channels::update_channel",
@@ -305,7 +317,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def send_payment(self, invoice=False, amount_in_msat=False, pubkey=False, expiry=24):
+    def send_payment(self, invoice: str="", amount_in_msat: int=0, pubkey: str="", expiry: int=24):
         params = {
             "mmrpc": "2.0",
             "method": "lightning::payments::send_payment",
@@ -314,14 +326,14 @@ class LightningNode:
             },
             "id": 762
         }
-        if invoice is not None:
+        if invoice != "":
             params["params"].update({
                 "payment": {
                     "type": "invoice",
                     "invoice": invoice
                 }             
             })
-        elif amount_in_msat and pubkey:
+        elif amount_in_msat > 0 and pubkey != "":
             params["params"].update({
                 "payment": {
                     "type": "keysend",
@@ -332,7 +344,7 @@ class LightningNode:
             })
         return self.dexAPI(params)
 
-    def get_payment_details(self, payment_hash):
+    def get_payment_details(self, payment_hash: str) -> dict:
         params = {
             "method": "lightning::payments::get_payment_details",
             "mmrpc": "2.0",
@@ -344,7 +356,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def list_payments(self, page=1, limit=10):
+    def list_payments(self, page: int=1, limit: int=10) -> dict:
         params = {
             "method": "lightning::payments::list_payments_by_filter",
             "mmrpc": "2.0",
@@ -359,7 +371,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def list_inbound_payments(self, page=1, limit=10):
+    def list_inbound_payments(self, page: int=1, limit: int=10) -> dict:
         params = {
             "method": "lightning::payments::list_payments_by_filter",
             "mmrpc": "2.0",
@@ -379,7 +391,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
     
-    def list_outbound_payments(self, page=1, limit=10):
+    def list_outbound_payments(self, page: int=1, limit: int=10) -> dict:
         params = {
             "method": "lightning::payments::list_payments_by_filter",
             "mmrpc": "2.0",
@@ -399,7 +411,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def get_claimable_balances(self, include_open_channels_balances=True):
+    def get_claimable_balances(self, include_open_channels_balances: bool=True) -> dict:
         params = {
             "mmrpc": "2.0",
             "method": "lightning::channels::get_claimable_balances",

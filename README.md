@@ -14,3 +14,5 @@ A TUI for using the  Lightning Network with the AtomicDEX API
 
 Refer to the docs for more information about the AtomicDEX API Lightning Methods: https://docs.atomicdex.io/atomicdex/atomicdex-api#lightning-methods
 
+## Tips
+Use the `View Lightning Explorers` option to find a node to connect or open a channel with.

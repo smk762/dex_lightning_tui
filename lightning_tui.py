@@ -24,10 +24,10 @@ author = '{:^100}'.format('AtomicDEX Lightning TUI v0.1 by Dragonhound')
 
 def main():
     tui = LightningTUI()
+    status = tui.get_status()
 
     while True:
         try:
-            status = tui.get_status()
             os.system('clear')
             print(colorize(header, 'lightgreen'))
             print(colorize(author, 'cyan'))
@@ -65,6 +65,7 @@ def main():
                 pass
         except KeyboardInterrupt:
             tui.exit_tui()
+        status = tui.get_status()
         input(colorize("Press Enter to continue...", 'orange'))
 
 def show_logo(logofile="logo.txt"):
