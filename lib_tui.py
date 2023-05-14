@@ -96,12 +96,15 @@ class LightningTUI():
         return self.node
     
     def get_coffee(self):
-        print(colorize(f"{' '*6}Once you have:", "cyan"))
-        print(colorize(f"{' '*8}- initialised your node", "cyan"))
-        print(colorize(f"{' '*8}- connected to a well known node (check the lightning explorers)", "cyan"))
-        print(colorize(f"{' '*8}- opened a channel from node", "cyan"))
+        print(colorize(f"{' '*6}Once you:", "cyan"))
+        print(colorize(f"{' '*8}- `Initialize Lightning`", "cyan"))
+        print(colorize(f"{' '*8}- `Connect to Lightning Node` (check the lightning explorers)", "cyan"))
+        print(colorize(f"{' '*8}- `Open Channel`", "cyan"))
         print(colorize(f"\n{' '*6}You can get an invoice for a coffee from https://starblocks.acinq.co!", "blue"))
-        print(colorize(f"\n{' '*8}Then you can get pay the `Pay Invoice`, `View Payment Details` or `List Payments`", "cyan"))
+        print(colorize(f"\n{' '*6}Then you can:", "cyan"))
+        print(colorize(f"{' '*8}- `Pay Invoice`", "cyan"))
+        print(colorize(f"{' '*8}- `View Payment Details`", "cyan"))
+        print(colorize(f"{' '*8}- `List Payments`", "cyan"))
 
     def get_help(self):
         print(colorize(f"{' '*6}Get more information about the AtomicDEX API Lightning features at:", "green"))
