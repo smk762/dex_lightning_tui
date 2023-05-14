@@ -1,3 +1,10 @@
+# Custom
+mm2
+MM2.json
+rpc
+DB/
+coins
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -123,6 +130,7 @@ celerybeat.pid
 .env
 .venv
 env/
+.venv/
 venv/
 ENV/
 env.bak/
