@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import json
+import random
 import logging
 import requests
 from dotenv import load_dotenv
@@ -34,11 +35,20 @@ class LightningNode:
         self.name = name
         self.port = port
         self.color = color
+        self.lightning_address = "no address found"
+        self.lightning_balance = 0
         self.payment_retries = payment_retries
+        self.platform_coin = f"{coin.split('-')[0]}-segwit"
         self.coin = f"{coin.split('-')[0]}-lightning"
+        self.lightning_address = "no address found"
+        self.lightning_balance = 0
+        self.coin_address = "no address found"
+        self.coin_balance = 0
+        self.coin_pubkey = "no pubkey found"
         self.activate_coin(coin)
         self.get_pubkey()
         self.initialize_lightning()
+        
 
     def dexAPI(self, params):
         params.update({"userpass": MM2_USERPASS})
@@ -53,7 +63,12 @@ class LightningNode:
     def activate_coin(self, coin):
         activation_params = requests.get(f"https://stats.kmd.io/api/atomicdex/activation_commands/?coin={coin}").json()
         if "coin" in activation_params:
-            activation_params.update({"coin": f"{coin}-segwit"})
+            activation_params.update({"coin": self.platform_coin})
+            
+        if "servers" in activation_params:
+            servers = activation_params["servers"]
+            activation_params.update({"servers": [random.choice(servers)]})
+            
         else:
             logger.critical(f"Coin {coin} not found in UTXO activation params! Exiting...")
             sys.exit(1)
@@ -66,7 +81,29 @@ class LightningNode:
             "params": {},
             "id": 762
         }
-        return self.dexAPI(params)
+        resp = self.dexAPI(params)
+        self.coin_pubkey = resp["result"]["public_key"]
+        return resp
+
+    def get_coin_balance(self):
+        params = {
+            "method": "my_balance",
+            "coin": self.platform_coin
+        }
+        resp = self.dexAPI(params)
+        self.coin_address = resp["address"]
+        self.coin_balance = resp["balance"]
+        return resp
+
+    def get_lightning_balance(self):
+        params = {
+            "method": "my_balance",
+            "coin": self.coin
+        }
+        resp = self.dexAPI(params)
+        self.lightning_address = resp["address"]
+        self.lightning_balance = resp["balance"]
+        return resp
 
     def initialize_lightning(self):
         '''Creates a lightning node for the coin'''
@@ -93,10 +130,10 @@ class LightningNode:
             return
         else:
             if "result" not in resp:
-                logger.warning(f"No result for {self.coin} !")
+                logger.warning(f"No result for {self.coin}!")
                 exit(1)
             if "task_id" not in resp["result"]:
-                logger.warning(f"No task_id for {self.coin} !")
+                logger.warning(f"No task_id for {self.coin}!")
                 exit(1)
         task_id = resp["result"]["task_id"]
         i = 0
@@ -110,6 +147,17 @@ class LightningNode:
             if "error" in resp:
                 break
             if resp["result"]["status"] in ["Ok", "Error"]:
+                if resp["result"]["status"] == "Ok":
+                    self.lightning_address = resp["result"]["details"]["address"]
+                    self.lightning_balance = resp["result"]["details"]["balance"]["spendable"]
+                    logger.info(f"Lightning node for {self.coin} created! Address: {self.lightning_address} Balance: {self.lightning_balance}")
+                if resp["result"]["status"] == "Error":
+                    self.lightning_address = resp["result"]["details"]["address"]
+                    self.lightning_balance = resp["result"]["details"]["balance"]["spendable"]
+                    self.coin_address = resp["result"]["details"]["address"]
+                    self.coin_balance = resp["result"]["details"]["balance"]["spendable"]
+                    self.coin_pubkey = resp["result"]["details"]["balance"]["spendable"]
+                    
                 break
             time.sleep(2)
 
@@ -243,7 +291,7 @@ class LightningNode:
         }
         return self.dexAPI(params)
 
-    def generate_invoice(self, description, amount_in_msat=10000, expiry=600):
+    def generate_invoice(self, description: str, amount_in_msat: int=10000, expiry: int=600) -> dict:
         params = {
             "method": "lightning::payments::generate_invoice",
             "mmrpc": "2.0",

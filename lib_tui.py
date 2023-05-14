@@ -66,7 +66,11 @@ class LightningTUI():
             {"Exit TUI": self.exit_tui}
         ]
         self.coin = coin
+        self.port = None
+        self.name = None
+        self.color = None
         self.node = node
+        self.status = self.get_status()
 
     def start_lightning(self):
         self.coin = color_input(" Select coin to initialize lightning [tBTC, BTC, LTC]: ") or "tBTC"
@@ -82,14 +86,48 @@ class LightningTUI():
             name=self.name,
             color=self.color
         )
+        self.status = self.get_status()
         return self.node
         
+    def get_coin_balance(self):
+        return self.node.get_coin_balance()
+    
+    def get_lightning_balance(self):
+        return self.node.get_lightning_balance()
+
+    def get_pubkey(self):
+        return self.node.get_pubkey()
+    
+    def get_status(self):
+        if self.node is None:
+            return {"lightning_status": "Not Initialized"}
+        if self.node.coin_pubkey is None:
+            self.get_pubkey()
+        self.get_coin_balance()
+        self.get_lightning_balance()
+
+        self.status = {
+            "coin": self.node.coin,
+            "platform_coin": self.node.platform_coin,
+            "coin_address": self.node.coin_address,
+            "coin_balance": self.node.coin_balance,
+            "coin_pubkey": self.node.coin_pubkey,
+            "lightning_address": self.node.lightning_address,
+            "lightning_balance": self.node.lightning_balance,
+            "lightning_port": self.node.port,
+            "lightning_name": self.node.name,
+            "lightning_color": self.node.color,
+            "lightning_status": "Initialized"
+        }
+        return self.status
+
     def connect_to_node(self):
         if self.node is None:
             logger.warning(" Lightning not initialized. Please initialize lightning first.")
             return
         node_address = color_input(" Enter lightning node address to connect to: ") or "038863cf8ab91046230f561cd5b386cbff8309fa02e3f0c3ed161a3aeb64a643b9@203.132.94.196:9735"
         self.node.connect_to_node(node_address)
+        self.status = self.get_status()
     
     def open_channel(self):
         if self.node is None:
@@ -122,13 +160,23 @@ class LightningTUI():
             print(colorize(" Lightning not initialized. Please initialize lightning first.", "red"))
             return
         description = color_input(" Enter description: ")
-        amount_in_msat = color_input(" Enter amount_in_msat: ")
-        base_fee_msat = color_input(" Enter base_fee_msat: ")
-        expiry = color_input(" Enter expiry: ")
+        amount_in_msat = None
+        while amount_in_msat is None:
+            try:
+                amount_in_msat = int(color_input(" Enter amount_in_msat: "))
+            except:
+                logger.warning("Invalid amount_in_msat (must be an integer). Please try again.")
+
+        expiry = None
+        while expiry is None:
+            try:
+                expiry = int(color_input(" Enter expiry: "))
+            except:
+                logger.warning("Invalid expiry (must be an integer). Please try again.")
+
         self.node.generate_invoice(
             description=description,
             amount_in_msat=amount_in_msat,
-            base_fee_msat=base_fee_msat,
             expiry=expiry
         )
     

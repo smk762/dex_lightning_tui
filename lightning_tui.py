@@ -4,22 +4,22 @@ import time
 from lib_tui import LightningTUI, colorize, color_input
 
 header = '''
-            _                  _      _____  ________   __  
-       /\  | |                (_)    |  __ \|  ____\ \ / /  
-      /  \ | |_ ___  _ __ ___  _  ___| |  | | |__   \ V /   
-     / /\ \| __/ _ \| '_ ` _ \| |/ __| |  | |  __|   > <    
-    / ____ \ || (_) | | | | | | | (__| |__| | |____ / . \   
-   /_/    \_\__\___/|_| |_| |_|_|\___|_____/|______/_/ \_\  
-     _       _         _      _           _                 
-    | |     (_)       | |    | |         (_)                
-    | |      _   __ _ | |__  | |_  _ __   _  _ __    __ _   
-    | |     | | / _` || '_ \ | __|| '_ \ | || '_ \  / _` |  
-    | |____ | || (_| || | | || |_ | | | || || | | || (_| |  
-    |______||_| \__, ||_| |_| \__||_| |_||_||_| |_| \__, |  
-                 __/ |                               __/ |  
-                |___/                               |___/   
+                        _                  _      _____  ________   __  
+                   /\  | |                (_)    |  __ \|  ____\ \ / /  
+                  /  \ | |_ ___  _ __ ___  _  ___| |  | | |__   \ V /   
+                 / /\ \| __/ _ \| '_ ` _ \| |/ __| |  | |  __|   > <    
+                / ____ \ || (_) | | | | | | | (__| |__| | |____ / . \   
+               /_/    \_\__\___/|_| |_| |_|_|\___|_____/|______/_/ \_\  
+                               _       _         _      _           _                 
+                              | |     (_)       | |    | |         (_)                
+                              | |      _   __ _ | |__  | |_  _ __   _  _ __    __ _   
+                              | |     | | / _` || '_ \ | __|| '_ \ | || '_ \  / _` |  
+                              | |____ | || (_| || | | || |_ | | | || || | | || (_| |  
+                              |______||_| \__, ||_| |_| \__||_| |_||_||_| |_| \__, |  
+                                           __/ |                               __/ |
+                                          |___/                               |___/   
 '''
-author = '{:^60}'.format('AtomicDEX Lightning TUI v0.1 by Dragonhound')
+author = '{:^100}'.format('AtomicDEX Lightning TUI v0.1 by Dragonhound')
 
 
 def main():
@@ -27,16 +27,27 @@ def main():
 
     while True:
         try:
+            status = tui.get_status()
             os.system('clear')
             print(colorize(header, 'lightgreen'))
             print(colorize(author, 'cyan'))
+            print("")
+            if status['lightning_status'] == "Initialized":
+                line1 = f"[{status['lightning_name']} | {status['lightning_status']} | Port {status['lightning_port']} | Color #{status['lightning_color']}]"
+                line2 = f"[{status['platform_coin']} | {status['coin_address']} | {status['coin_balance']}]"
+                line3 = f"[{status['coin']} | {status['lightning_address']} | {status['lightning_balance']}]"
+                print(colorize('{:^100}'.format(line1), 'orange'))
+                print(colorize('{:^100}'.format(line2), 'orange'))
+                print(colorize('{:^100}'.format(line3), 'orange'))
+
+            else: print(colorize('{:^100}'.format("Lightning not initialized. Please initialize lightning first."), "red"))
             print("")
 
             try:
                 for item in tui.menu_items:
                     i = tui.menu_items.index(item)
                     option = list(item.keys())[0]
-                    print(colorize(f"[{i}] {option}", 'blue'))
+                    print(colorize(f"{' '*6}[{i}] {option}", 'blue'))
                 choice = color_input("\n Select menu option: ")
                 if int(choice) < 0:
                     raise ValueError
